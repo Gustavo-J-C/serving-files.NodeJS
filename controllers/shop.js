@@ -3,35 +3,42 @@ const product = require("../models/product");
 const Product = require("../models/product");
 
 exports.getProducts = async (req, res, next) => {
-    Product.fetchAll(products => {
-        res.render('shop/product-list', {
-            prods: products,
-            pageTitle: 'All products',
-            path: '/products',
-        });
-    })
+    Product.fetchAll()
+        .then(([rows, fieldData]) => {
+            res.render('shop/product-list', {
+                prods: rows,
+                pageTitle: 'All products',
+                path: '/products',
+            })
+        })
+        .catch(err => console.log(err))
 }
 
 exports.getProduct = async (req, res, next) => {
     const prodId = req.params.productId;
-    Product.findById(prodId, product => {
-        res.render('shop/product-detail', {
-            product: product,
-            pageTitle: product.title,
-            path: '/products'
-        });
-    });
+    Product.findById(prodId) 
+        .then(([rows, fieldData]) => {
+            res.render('shop/product-detail', {
+                product: rows[0],
+                pageTitle: rows[0].title,
+                path: '/products'
+            });
+            console.log(rows);
+        })
+        .catch(err => console.log(err))
 }
 
 exports.getIndex = async (req, res, next) => {
-    Product.fetchAll(products => {
-        res.render('shop/index', {
-            prods: products,
-            pageTitle: 'Shop',
-            path: '/'
-        });
-    })
-}
+    Product.fetchAll()
+        .then(([rows, fieldData]) => {
+            res.render('shop/index', {
+                prods: rows,
+                pageTitle: 'Shop',
+                path: '/'
+            })
+        })
+        .catch(err => console.log(err));
+};
 
 exports.getCart = async (req, res, next) => {
     Cart.getProducts(cart => {
@@ -40,7 +47,7 @@ exports.getCart = async (req, res, next) => {
             for (const product of products) {
                 const cartProductData = cart?.products.find(prod => prod.id === product.id);
                 if (cartProductData) {
-                    cartProducts.push({productData: product, qty: cartProductData.qty});
+                    cartProducts.push({ productData: product, qty: cartProductData.qty });
                 }
             }
             res.render('shop/cart', {
@@ -74,7 +81,7 @@ exports.getCheckout = (req, res, next) => {
     })
 }
 
-exports.postCartDeleteProduct = (req,res) => {
+exports.postCartDeleteProduct = (req, res) => {
     const prodId = req.body.productId;
     Product.findById(prodId, product => {
         Cart.deleteProduct(prodId, product.price);
